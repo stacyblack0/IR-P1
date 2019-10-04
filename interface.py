@@ -60,7 +60,7 @@ def init_ui():
 def init_color():
     curses.start_color()
     curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
-    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_RED)
     curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
 # handle pressing space, which starts providing suggestions
@@ -98,6 +98,22 @@ def do_backspace():
         del query[-1]
         reset_query_cursor()
 
+# if a user uses the arrow keys, handle selection of suggestions/results
+def do_select():
+    # up
+    if ch == 65:
+        stdscr.addstr(7, 7, ' ', curses.color_pair(2))
+        # reset_query_cursor()
+    # down
+    if ch == 66:
+        stdscr.addstr(7, 7, 'test2')
+    # right
+    if ch == 67:
+        stdscr.addstr(7, 7, 'test3')
+    # left
+    if ch == 68:
+        stdscr.addstr(7, 7, 'test4')
+
 try:
 
     # initialize curses
@@ -111,25 +127,25 @@ try:
     # list of characters that make up the query
     query = []
 
-    # init_color()
+    init_color()
     init_ui()
-
-    have_suggested = False
 
     while True: 
 
         ch = stdscr.getch()
 
         # don't add non-alphanumeric characters, like enter and backspace, to the query
-        if ch in range(32, 127):
+        if ch in range(32, 127) and ch not in range(65, 69) and ch != 91 and ch != 93:
         # if ch != 10 and ch != 127:
             query.append(chr(ch))
+        # stdscr.addstr(9, 6, str(ch))
 
         # print query so far to screen
         stdscr.addstr(query_y, query_x, ''.join(query))
 
-        if ch == curses.KEY_DOWN: # TODO: get this to work
-            stdscr.addstr(1, 1, 'test')
+        # user presses arrow keys
+        if ch in range(65, 69):
+            do_select()
         
         # if hitting space, retrieve suggestions, except if space already pressed
         if chr(ch) == ' ' and query[len(query) - 2] != ' ':
