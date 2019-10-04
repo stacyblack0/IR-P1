@@ -100,20 +100,24 @@ def do_backspace():
 
 # if a user uses the arrow keys, handle selection of suggestions/results
 def do_select():
-    # TODO: have while loop, don't exit until cursor goes back up to the query line?
-    # up
-    if ch == 65:
-        stdscr.addstr(7, 7, ' ', curses.color_pair(2))
-        # reset_query_cursor()
-    # down
-    if ch == 66:
-        stdscr.addstr(7, 7, 'test2')
-    # right
-    if ch == 67:
-        stdscr.addstr(7, 7, 'test3')
-    # left
-    if ch == 68:
-        stdscr.addstr(7, 7, 'test4')
+
+    position = 1
+    max_position = 3
+    while position > 0:
+        # TODO: don't exit until cursor goes back up to the query line?
+        # up
+        if ch == 65:
+            stdscr.addstr(7, 7, ' ', curses.color_pair(2))
+            # reset_query_cursor()
+        # down
+        if ch == 66:
+            stdscr.addstr(7, 7, 'test2')
+        # right
+        if ch == 67:
+            stdscr.addstr(7, 7, 'test3')
+        # left
+        if ch == 68:
+            stdscr.addstr(7, 7, 'test4')
 
 try:
 
