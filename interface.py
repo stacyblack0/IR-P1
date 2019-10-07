@@ -99,25 +99,39 @@ def do_backspace():
         reset_query_cursor()
 
 # if a user uses the arrow keys, handle selection of suggestions/results
-def do_select():
+def do_select(arrow):
 
     position = 1
     max_position = 3
+    result_selected = False
+    stdscr.addstr(query_y+1+position, query_x, str(position))
+
+    # while loop doesn't exit until user hits enter or moves cursor back to query line
     while position > 0:
-        # TODO: don't exit until cursor goes back up to the query line?
+
+        arrow = stdscr.getch()
+
         # up
-        if ch == 65:
-            stdscr.addstr(7, 7, ' ', curses.color_pair(2))
-            # reset_query_cursor()
+        if arrow == 65:
+            position -= 1
         # down
-        if ch == 66:
-            stdscr.addstr(7, 7, 'test2')
-        # right
-        if ch == 67:
-            stdscr.addstr(7, 7, 'test3')
-        # left
-        if ch == 68:
-            stdscr.addstr(7, 7, 'test4')
+        elif arrow == 66:
+            if (position+1) <= max_position:
+                position += 1
+        # enter
+        elif arrow == 10:
+            stdscr.addstr(query_y+5, query_x, "selected suggestion/result " + str(position))
+            result_selected = True
+            position = 0
+
+        if position == 0:
+            reset_query_cursor()
+            break
+        else:
+            stdscr.addstr(query_y+1+position, query_x, str(position))
+            # stdscr.refresh()
+
+    return result_selected
 
 try:
 
@@ -132,8 +146,11 @@ try:
     # list of characters that make up the query
     query = []
 
-    init_color()
+    # init_color()
     init_ui()
+
+    # whether or not suggestions/results have been generated
+    results = False
 
     while True: 
 
@@ -148,19 +165,22 @@ try:
         # print query so far to screen
         stdscr.addstr(query_y, query_x, ''.join(query))
 
-        # user presses arrow keys
-        if ch in range(65, 69):
-            do_select()
+        # user presses down key to select suggestion/result
+        if ch == 66:
+            if results == True:
+                results = do_select(ch)
         
         # if hitting space, retrieve suggestions, except if space already pressed
         if chr(ch) == ' ' and query[len(query) - 2] != ' ':
             do_suggest()
+            results = True
         # if hitting enter, launch search and clear query line
         elif ch == 10:
             do_search_result()
             # can't get these to work in function scope
             query = []
             reset_query_cursor()
+            results = True
 
         # if pressing backspace, remove character from entry list of characters
         elif ch == 127:
