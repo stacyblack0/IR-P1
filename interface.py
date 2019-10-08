@@ -64,32 +64,36 @@ def init_color():
     curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
 # handle pressing space, which starts providing suggestions
-def do_suggest():
+def do_suggest(q):
 
     clear_results()
 
     # get suggestions and display them
-    suggestions = fetch_suggestions(query)
+    suggestions = fetch_suggestions(q)
     for i, doc in enumerate(suggestions):
         doc_str = str(i+1) + ' ' + doc
         stdscr.addstr(query_y+2+i, query_x, doc_str)
     
     reset_query_cursor()
 
+    return suggestions
+
 # handle pressing enter, which starts a search
-def do_search_result():
+def do_search_result(q):
 
     clear_results()
 
-    stdscr.addstr(query_y+2, query_x, 'top search results:')
+    # stdscr.addstr(query_y+2, query_x, 'top search results:')
 
     # get search results and display them
-    search_results = fetch_search_results(query)
-    for i, doc in enumerate(search_results, start=1):
-        doc_str = str(i) + ' ' + doc
+    search_results = fetch_search_results(q)
+    for i, doc in enumerate(search_results):
+        doc_str = str(i+1) + ' ' + doc
         stdscr.addstr(query_y+2+i, query_x, doc_str)
     
-    stdscr.addstr(query_y, query_x, ' ' * len(query))
+    stdscr.addstr(query_y, query_x, ' ' * len(q))
+
+    return search_results
 
 # handle pressing backspace
 def do_backspace():
@@ -104,6 +108,7 @@ def do_select(arrow):
     position = 1
     max_position = 3
     result_selected = False
+    result_num = 0
     stdscr.addstr(query_y+1+position, query_x, str(position))
 
     # while loop doesn't exit until user hits enter or moves cursor back to query line
@@ -122,6 +127,7 @@ def do_select(arrow):
         elif arrow == 10:
             stdscr.addstr(query_y+5, query_x, "selected suggestion/result " + str(position))
             result_selected = True
+            result_num = position
             position = 0
 
         if position == 0:
@@ -131,7 +137,11 @@ def do_select(arrow):
             stdscr.addstr(query_y+1+position, query_x, str(position))
             # stdscr.refresh()
 
-    return result_selected
+    return result_selected, result_num
+
+def do_fetch_document(doc_id):
+    # TODO: print document to screen somehow
+    i=1
 
 try:
 
@@ -150,7 +160,9 @@ try:
     init_ui()
 
     # whether or not suggestions/results have been generated
-    results = False
+    has_suggestions = False
+    has_results = False
+    results_list = [] # TODO: make this a dict?
 
     while True: 
 
@@ -167,20 +179,33 @@ try:
 
         # user presses down key to select suggestion/result
         if ch == 66:
-            if results == True:
-                results = do_select(ch)
+            if has_suggestions == True or has_results == True:
+
+                has_selected, selected_num = do_select(ch)
+
+                if has_selected == True:
+                    if has_suggestions == True:
+                        results_dict = do_search_result(results_list[selected_num-1])
+                        # can't get these to work in function scope
+                        query = []
+                        reset_query_cursor()
+                        has_results = True
+                        has_suggestions = False
+                    elif has_results == True:
+                        do_fetch_document(selected_num)
+                        has_results = False
         
         # if hitting space, retrieve suggestions, except if space already pressed
         if chr(ch) == ' ' and query[len(query) - 2] != ' ':
-            do_suggest()
-            results = True
+            results_list = do_suggest(query)
+            has_suggestions = True
         # if hitting enter, launch search and clear query line
-        elif ch == 10:
-            do_search_result()
+        elif ch == 10 and len(query) > 0:
+            results_list = do_search_result(query)
             # can't get these to work in function scope
             query = []
             reset_query_cursor()
-            results = True
+            has_results = True
 
         # if pressing backspace, remove character from entry list of characters
         elif ch == 127:
