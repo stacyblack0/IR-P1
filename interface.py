@@ -125,7 +125,6 @@ def do_select(arrow):
                 position += 1
         # enter
         elif arrow == 10:
-            stdscr.addstr(query_y+5, query_x, "selected suggestion/result " + str(position))
             result_selected = True
             result_num = position
             position = 0
@@ -135,12 +134,13 @@ def do_select(arrow):
             break
         else:
             stdscr.addstr(query_y+1+position, query_x, str(position))
-            # stdscr.refresh()
 
     return result_selected, result_num
 
 def do_fetch_document(doc_id):
     # TODO: print document to screen somehow
+    stdscr.addstr(query_y+5, query_x, "fetched document " + str(doc_id))
+    reset_query_cursor()
     i=1
 
 try:
@@ -148,6 +148,7 @@ try:
     # initialize curses
     stdscr = curses.initscr()
     curses.noecho()
+    # stdscr.keypad(1)
 
     # start point of query entry on screen
     query_x = 2
@@ -168,32 +169,29 @@ try:
 
         ch = stdscr.getch()
 
-        # don't add non-alphanumeric characters, like enter and backspace, to the query
+        # don't add non-alphanumeric characters, like enter and backspace, to the query, or arrow keys or square brackets
         if ch in range(32, 127) and ch not in range(65, 69) and ch != 91 and ch != 93:
-        # if ch != 10 and ch != 127:
             query.append(chr(ch))
-        # stdscr.addstr(9, 6, str(ch))
 
         # print query so far to screen
         stdscr.addstr(query_y, query_x, ''.join(query))
 
         # user presses down key to select suggestion/result
-        if ch == 66:
-            if has_suggestions == True or has_results == True:
+        if ch == 66 and (has_suggestions == True or has_results == True):
 
-                has_selected, selected_num = do_select(ch)
+            has_selected, selected_num = do_select(ch)
 
-                if has_selected == True:
-                    if has_suggestions == True:
-                        results_dict = do_search_result(results_list[selected_num-1])
-                        # can't get these to work in function scope
-                        query = []
-                        reset_query_cursor()
-                        has_results = True
-                        has_suggestions = False
-                    elif has_results == True:
-                        do_fetch_document(selected_num)
-                        has_results = False
+            if has_selected == True:
+                if has_suggestions == True:
+                    results_dict = do_search_result(results_list[selected_num-1])
+                    # can't get these to work in function scope
+                    query = []
+                    reset_query_cursor()
+                    has_results = True
+                    has_suggestions = False
+                elif has_results == True:
+                    do_fetch_document(selected_num)
+                    has_results = False
         
         # if hitting space, retrieve suggestions, except if space already pressed
         if chr(ch) == ' ' and query[len(query) - 2] != ' ':
@@ -206,6 +204,7 @@ try:
             query = []
             reset_query_cursor()
             has_results = True
+            has_suggestions = False
 
         # if pressing backspace, remove character from entry list of characters
         elif ch == 127:
@@ -216,7 +215,7 @@ except:
 
 # cleanup on exit    
 finally:
-    stdscr.keypad(0)
+    # stdscr.keypad(0)
     curses.echo()
     curses.nocbreak()
     curses.endwin()
