@@ -3,6 +3,7 @@ import numpy as np
 from datetime import datetime
 from pathlib import Path
 import pickle
+import warnings
 
 # converts a string to a set of words
 def make_set(x):
@@ -39,25 +40,49 @@ class QuerySuggest:
 
         print('loading data...')
 
-        all_files = [
-            './ql/Clean-Data-01.txt',
-            './ql/Clean-Data-02.txt',
-            './ql/Clean-Data-03.txt',
-            './ql/Clean-Data-04.txt',
-            './ql/Clean-Data-05.txt'
-        ]
+        pkl_path = Path('./qs_data.pkl')
+        if pkl_path.is_file():
+            print('loading data from pickle file...')
+            pkl_file = open(pkl_path, 'rb') # must read as binary
+            self.df = pickle.load(pkl_file)
+            # self.df = self.df.sort_values(by=['AnonID', 'q_time'])
+            pkl_file.close()
+        else:
 
-        self.df = pd.concat((pd.read_csv(f, sep='\t') for f in all_files))
+            print('loading data from query logs...')
+
+            all_files = [
+                './ql/Clean-Data-01.txt',
+                './ql/Clean-Data-02.txt',
+                './ql/Clean-Data-03.txt',
+                './ql/Clean-Data-04.txt',
+                './ql/Clean-Data-05.txt'
+            ]
+
+            self.df = pd.concat((pd.read_csv(f, sep='\t') for f in all_files))
+            # convert QueryTime string to POSIX timestamp
+            self.df['QueryTime'] = pd.to_datetime(self.df['QueryTime'])
+            self.df['q_time'] = self.df['QueryTime'].map(lambda x: x.timestamp())
+            # convert query strings to sets of words
+            self.df['q_split'] = self.df['Query'].map(lambda x: make_set(x))
+            # get lengths of queries
+            self.df['q_length'] = self.df['q_split'].map(lambda x: len(x))
+            # self.__process_data()
+
+            print('saving data to pickle file...')
+            pkl_file = open(pkl_path, 'wb') # must write as binary
+            pickle.dump(self.df, pkl_file)
+            pkl_file.close()
 
     def __process_data(self):
         print('processing loaded data...')
-        # convert QueryTime string to POSIX timestamp
-        self.df['QueryTime'] = pd.to_datetime(self.df['QueryTime'])
-        self.df['q_time'] = self.df['QueryTime'].map(lambda x: x.timestamp())
-        # convert query strings to sets of words
-        self.df['q_split'] = self.df['Query'].map(lambda x: make_set(x))
-        # get lengths of queries
-        self.df['q_length'] = self.df['q_split'].map(lambda x: len(x))
+        # # convert QueryTime string to POSIX timestamp
+        # self.df['QueryTime'] = pd.to_datetime(self.df['QueryTime'])
+        # self.df['q_time'] = self.df['QueryTime'].map(lambda x: x.timestamp())
+        # # convert query strings to sets of words
+        # self.df['q_split'] = self.df['Query'].map(lambda x: make_set(x))
+        # # get lengths of queries
+        # self.df['q_length'] = self.df['q_split'].map(lambda x: len(x))
         # convert set back to string
         self.df['q_split_join'] = self.df['q_split'].map(lambda x: ' '.join(x))
 
@@ -88,8 +113,9 @@ class QuerySuggest:
         else:
 
             print('calculating frequencies from data...')
-            df_gb = self.df.groupby(['Query'])
-            df_freq = pd.DataFrame(df_gb.count()['q_length'])
+            # df_gb = self.df.groupby(['Query'])
+            # df_freq = pd.DataFrame(df_gb.count()['q_length'])
+            df_freq = pd.DataFrame(self.df.groupby(['Query'])['q_length'].count())
 
             # TODO: do log?
             max_freq = df_freq['q_length'].sort_values(ascending=False)[0]
@@ -138,7 +164,7 @@ class QuerySuggest:
         # s_gb = df[['Query', 'AnonID']].groupby(['Query']).nunique()
         # q_count = s_gb.count()[0]
         # q_count = self.query_freq
-        
+
         return mod_count / self.query_freq
 
     """
@@ -198,11 +224,12 @@ class QuerySuggest:
         
         # print('getting top query suggestions...')
 
+        pd.options.mode.chained_assignment = None # suppress warning
         self.candidates['score'] = self.candidates['Query'].map(lambda x: self.__score(x))
         self.candidates = self.candidates.sort_values(by='score', ascending=False)
         # drop query suggestions that are duplicates (just different arrangement of words)
         top_5 = self.candidates.drop_duplicates(subset='q_split_join')
-
+        
         if len(top_5) >= 5:
             top_5 = top_5[:5]
 
@@ -228,6 +255,5 @@ def main():
     suggestions = query_suggest.get_suggestions(query)
     print(suggestions)
 
-  
 if __name__== "__main__":
     main()
