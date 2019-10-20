@@ -1,0 +1,88 @@
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+<body>
+    <div>
+      <!--https://codepen.io/matt-west/pen/jKnzG-->
+      <!--https://stackoverflow.com/questions/16100543/uncaught-typeerror-cannot-set-property-value-of-null-->
+        <p>here's the input form</p>
+        <label for="ajax">Pick an HTML Element (options loaded using AJAX)</label>
+        <input type="text" id="ajax" list="json-datalist" placeholder="e.g. datalist">
+        <datalist id="json-datalist"></datalist>
+    </div>
+    <script type="text/javascript">
+
+      // Get the <datalist> and <input> elements.
+      var dataList = document.getElementById('json-datalist');
+      var input = document.getElementById('ajax');//.replace(" ", "%");
+
+      // Create a new XMLHttpRequest.
+      var request = new XMLHttpRequest();
+
+      $(window).keypress(function (e) {
+          if (e.key === ' ' || e.key === 'Spacebar') {
+             console.log('javascript --> space pressed');
+             input = document.getElementById('ajax');
+
+             //request.open('GET', 'http://127.0.0.1:5000/suggestions?input=' + (input.value).split(" ").join("%"), true);
+             //request.send();
+             //if (request.readyState === 4) {
+             //  if (request.status === 200) {
+
+             var spaceCount = (String(input.value).split(" ").length - 1);
+             var inputParam = String(input.value);
+
+             var i;
+             for (i = 0; i < spaceCount; i++) {
+               inputParam.replace(" ", "%");
+             }
+
+             console.log("javascript --> input:");
+             // var mystring = "this,is,a,test"
+             // var newchar = '|'
+             // mystring = mystring.split(',').join(newchar);
+             console.log(inputParam);//replace(" ", "%"));
+
+                 request = new XMLHttpRequest();
+                 request.open('GET', String('http://127.0.0.1:5000/suggestions?input=' + inputParam), false);
+                 request.send();
+
+                 // Parse the JSON
+                 console.log("javascript --> request.responseText:");
+                 console.log(request.responseText);
+                 var jsonOptions = JSON.parse(request.responseText);
+                 console.log("javascript --> jsonOptions");
+                 console.log("javascript --> " + jsonOptions);
+
+                 dataList.innerHTML = '';
+
+                 // Loop over the JSON array.
+                 jsonOptions.forEach(function(item) {
+                   // Create a new <option> element.
+                   var option = document.createElement('option');
+                   // Set the value using the item in the JSON array.
+                   option.value = item;
+                   // Add the <option> element to the <datalist>.
+                   dataList.appendChild(option);
+                 });
+
+                 // Update the placeholder text.
+                 //input.placeholder = "e.g. datalist";
+               } else {
+                 // An error occured :(
+                 input.placeholder = "Couldn't load datalist options :(";
+               }
+             //}
+          //}
+      });
+
+      // Update the placeholder text.
+      //input.placeholder = "Loading options...";
+
+      // Set up and make the request.
+      //request.open('GET', String('http://127.0.0.1:5000/suggestions?input=' + String(input.value).replace(" ", "%")), true);
+      //request.send();
+
+
+    </script>
+</body>
