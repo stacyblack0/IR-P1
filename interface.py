@@ -2,7 +2,9 @@ import curses
 import traceback
 from random import randint
 
-# Takes a user's (incomplete) query, and returns a list of document suggestions.
+from query_suggestions import QuerySuggest
+
+# Takes a user's (incomplete) query, and returns a list of query suggestions.
 def fetch_suggestions(partial_query):
 
     # join character list into string
@@ -15,8 +17,9 @@ def fetch_suggestions(partial_query):
     test_id1 = str(randint(0, 999999))
     test_id2 = str(randint(0, 999999))
     test_id3 = str(randint(0, 999999))
-    # TODO: get top suggestions from wikipedia corpus, which will be returned
-    ret = [partial_query + ' ' + test_id1, partial_query + ' ' + test_id2, partial_query + ' ' + test_id3]
+
+    # ret = [partial_query + ' ' + test_id1, partial_query + ' ' + test_id2, partial_query + ' ' + test_id3]
+    ret = query_suggest.get_suggestions(partial_query)
 
     return ret
 
@@ -144,6 +147,9 @@ def do_fetch_document(doc_id):
     i=1
 
 try:
+
+    # initialize query suggestions class
+    query_suggest = QuerySuggest()
 
     # initialize curses
     stdscr = curses.initscr()
