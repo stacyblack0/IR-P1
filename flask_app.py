@@ -173,8 +173,12 @@ def boldSearchTerms(snippet, query):
 def homepage_content():
     global tf_idf_test, token_2_index, docs_content, tokenizer, stop_words, ps, results, form, top, df, frequencies, search, form2
     text = request.form['text']
+    if len(text.replace(" ", "")) == 0:
+        return top + form + "</div></body>"
     print('@app.route("/", methods=["POST"] ==> text = ' + str(text))
     best_results = getTop5(text, ps, stop_words, tokenizer, docs_content, token_2_index, tf_idf_test)
+    if isinstance(best_results, str):
+        return top + form + "</div></body>"
     results = ''
     results += """<div>""" + """
     <h6 style="display:inline">You searched for:</h6>

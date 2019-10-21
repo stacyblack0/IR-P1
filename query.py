@@ -11,6 +11,7 @@ from nltk.tokenize import sent_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 import color
 
+#process query the same way we processed documents
 def process(content, ps, stop_words, tokenizer):
     #df = row.to_frame()
     # split documents with tokenizer
@@ -24,6 +25,7 @@ def process(content, ps, stop_words, tokenizer):
     # lemmatize/stem terms
     return [ps.stem(token) for token in processed]
 
+#compute tf-idf for every sentence in document, compare to search query to get two top sentences
 def getSnippetFromContent(content, query):
     tf = TfidfVectorizer()
     sentences = sent_tokenize(content)
@@ -39,22 +41,18 @@ def getSnippetFromContent(content, query):
     docSent_score_selected = docSent_score[0:2]
     sentence_indices = [i[0] for i in docSent_score_selected]
     snippet = '... '.join([sentences[i] for i in sentence_indices])
-    #print('\033[1m' + 'Hello World! ' + '\033[0m' + 'asdfasdf')
     return snippet
 
+#compare query to every document, get top 5 most relevent documents
 def getTop5(query, ps, stop_words, tokenizer, docs_content, token_2_index, tf_idf_test):
-    #query_proc
     query_proc = process(query, ps, stop_words, tokenizer)
-    #[token_2_index[token] for token in query_proc]
-    query_all_docs = (tf_idf_test.T)[[token_2_index[token] for token in query_proc],:].todense()
-    #query_all_docs.shape
-    #type(query_all_docs[0])
-    #query_all_docs
+    if len(query_proc) == 0:
+        return "please enter a more specific query :)"
+    print('query_proc: ' + str(query_proc))
+    query_all_docs = (tf_idf_test.T)[[token_2_index[token] for token in query_proc if token in token_2_index],:].todense()
     for i in range(len(query_all_docs)):
         query_all_docs[i] = np.where(query_all_docs[i]==0, -1000, query_all_docs[i])
-    #query_all_docs
     query_all_docs_sum = np.sum(query_all_docs, axis=0)
-    #len(query_all_docs_sum.tolist()[0])
     docId_score = list(zip(range(len(query_all_docs_sum.tolist()[0])), query_all_docs_sum.tolist()[0]))
     docId_score.sort(key=operator.itemgetter(1), reverse=True)
     docId_score_selected = docId_score[0:5]
