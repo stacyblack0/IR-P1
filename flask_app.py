@@ -181,7 +181,7 @@ def homepage_content():
     <p style="display:inline; color:DodgerBlue"><i>""" + text + """</i></p></div><br>"""
     for index, row in best_results.iterrows():
         results += """<div style="background-color:white">""" + """
-        <h4>""" + row['title'] + """</h4>
+        <h4>""" + row['title'] + " (" + str(index+1) + ")""""</h4>
         <p style="background-color:white">""" + boldSearchTerms(row['snippet'], text) + """</p>
         <p style="background-color:white">score: """ + str(row['score'])[0:5] + """</p></div>"""
     processed_output = """<div class="container justify-content-center">""" + results + "</div>"
@@ -195,14 +195,14 @@ def ajaxSuggestions():
     print('/suggestions --> request.args.get("input") = ' + input)
     input = input.replace("%", " ")
     print('/suggestions --> with spaces: ' + input)
-    try:
-        suggestions = get_top_5_simple(df, frequencies, input)
-        print('/suggestions --> suggestions = ' + str(suggestions.tolist()))
-        suggestions_json = json.dumps(suggestions.tolist())
-        print('/suggestions --> suggestions_json = ' + suggestions_json)
-        return suggestions_json
-    except:
-        return ""
+    #try:
+    suggestions = get_top_5_simple(df, frequencies, input)
+    print('/suggestions --> suggestions = ' + str(suggestions.tolist()))
+    suggestions_json = json.dumps(suggestions.tolist())
+    print('/suggestions --> suggestions_json = ' + suggestions_json)
+    return suggestions_json
+    #except:
+    #return ""
 
 #previous homepage without content
 @app.route('/2')
