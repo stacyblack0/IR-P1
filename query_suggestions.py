@@ -46,7 +46,7 @@ class QuerySuggest:
             print('loading data from pickle file...')
             pkl_file = open(pkl_path, 'rb') # must read as binary
             self.df = pickle.load(pkl_file)
-            # self.df = self.df.sort_values(by=['AnonID', 'q_time'])
+            # self.df = self.df.sort_values(by=['session_id', 'q_time'])
             pkl_file.close()
         else:
 
@@ -68,6 +68,17 @@ class QuerySuggest:
             self.df['q_split'] = self.df['Query'].map(lambda x: make_set(x))
             # get lengths of queries
             self.df['q_length'] = self.df['q_split'].map(lambda x: len(x))
+            # get session IDs, based on when a different user starts making a search in the query log
+			session_ID = []
+			cur_session = 0
+			prev_ID = 0
+			for item in self.df['AnonID']:
+				if item != prev_ID:
+					cur_session += 1
+					prev_ID = item
+				session_ID.append(cur_session)
+    
+			self.df['session_id'] = session_ID
             # self.__process_data()
 
             print('saving data to pickle file...')
@@ -95,7 +106,7 @@ class QuerySuggest:
         df_criterion = self.df['q_split'].map(lambda x: len(x) == (len(self.query)+1) and self.query == x[:len(self.query)])
         qdf = self.df[df_criterion]
         # set searches in same session as the query, and candidate queries
-        self.sessions = self.df[self.df['AnonID'].isin(qdf['AnonID'].values)]
+        self.sessions = self.df[self.df['session_id'].isin(qdf['session_id'].values)]
         self.candidates = qdf
 
     """
@@ -143,7 +154,7 @@ class QuerySuggest:
         self.query_sessions = q_sessions
 
     def __get_query_freq(self):
-        q_gb = self.df[['Query', 'AnonID']].groupby(['Query']).nunique()
+        q_gb = self.df[['Query', 'session_id']].groupby(['Query']).nunique()
         self.query_freq = q_gb.count()[0]
 
     def __mod(self, CQ):
@@ -154,7 +165,6 @@ class QuerySuggest:
         q_index = self.query_sessions.index
         
         # num sessions q' is modified to CQ
-        # TODO: per-session instead
         mod_count = 0
         for i in q_index:
             # if sessions['q_split'].loc[i+1]  == CQ:
@@ -162,8 +172,8 @@ class QuerySuggest:
                 mod_count += 1
 
         # num sessions q' appears in QL
-        # s_gb = q_sessions[['Query', 'AnonID']].groupby(['Query']).nunique()
-        # s_gb = df[['Query', 'AnonID']].groupby(['Query']).nunique()
+        # s_gb = q_sessions[['Query', 'session_id']].groupby(['Query']).nunique()
+        # s_gb = df[['Query', 'session_id']].groupby(['Query']).nunique()
         # q_count = s_gb.count()[0]
         # q_count = self.query_freq
 
@@ -187,7 +197,7 @@ class QuerySuggest:
         else:
 
             print('calculating max time from data...')
-            session_lengths = self.df.groupby('AnonID')['q_time'].agg(np.ptp)
+            session_lengths = self.df.groupby('session_id')['q_time'].agg(np.ptp)
             self.max_session_length = session_lengths.sort_values(ascending=False).iloc[0]
 
             print('saving max time to pickle file...')
