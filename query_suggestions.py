@@ -7,7 +7,8 @@ import warnings
 
 # converts a string to a set of words
 def make_set(x):
-    return set(str(x).split())
+	# return set(str(x).split())
+    return str(x).split()
 
 # split string, put in set, and then convert again to string
 def split_join(x):
@@ -63,7 +64,7 @@ class QuerySuggest:
             # convert QueryTime string to POSIX timestamp
             self.df['QueryTime'] = pd.to_datetime(self.df['QueryTime'])
             self.df['q_time'] = self.df['QueryTime'].map(lambda x: x.timestamp())
-            # convert query strings to sets of words
+            # convert query strings to a list of words
             self.df['q_split'] = self.df['Query'].map(lambda x: make_set(x))
             # get lengths of queries
             self.df['q_length'] = self.df['q_split'].map(lambda x: len(x))
@@ -90,7 +91,8 @@ class QuerySuggest:
     def __get_sessions(self):
         # print('getting candidates...')
         # find indeces where the user's query is part of a query in the query log, and apply to dataframe
-        df_criterion = self.df['q_split'].map(lambda x: self.query.issubset(x) and len(x) == (len(self.query)+1))
+        # df_criterion = self.df['q_split'].map(lambda x: self.query.issubset(x) and len(x) == (len(self.query)+1))
+        df_criterion = self.df['q_split'].map(lambda x: len(x) == (len(self.query)+1) and self.query == x[:len(self.query)])
         qdf = self.df[df_criterion]
         # set searches in same session as the query, and candidate queries
         self.sessions = self.df[self.df['AnonID'].isin(qdf['AnonID'].values)]
@@ -228,7 +230,7 @@ class QuerySuggest:
         self.candidates['score'] = self.candidates['Query'].map(lambda x: self.__score(x))
         self.candidates = self.candidates.sort_values(by='score', ascending=False)
         # drop query suggestions that are duplicates (just different arrangement of words)
-        top_5 = self.candidates.drop_duplicates(subset='q_split_join')
+        top_5 = self.candidates.drop_duplicates(subset='Query')
         
         if len(top_5) >= 5:
             top_5 = top_5[:5]
@@ -240,7 +242,7 @@ class QuerySuggest:
     """
     def get_suggestions(self, query):
 
-        query = set(query)
+        query = query.split(' ')
         self.query = query
         self.__get_sessions()
         # pre-calculate some values for the query
@@ -250,7 +252,8 @@ class QuerySuggest:
         return self.__get_top_5()
 
 def main():
-    query = ['make', 'money']
+	# query = ['make', 'money']
+    query = 'make money'
     query_suggest = QuerySuggest()
     suggestions = query_suggest.get_suggestions(query)
     print(suggestions)
