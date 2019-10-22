@@ -6,7 +6,7 @@ import pickle as pkl
 # # only run here and below
 # converts a string to a set of words
 def make_set(x):
-    return str(x).split()
+    return set(str(x).split())
 
 # split string, put in set, and then convert again to string
 def split_join(x):
@@ -17,7 +17,7 @@ def split_join(x):
 # gets candidate queries and the sessions where those candidate queries occur
 def get_sessions(df, q):
     # find indeces where the user's query is part of a query in the query log, and apply to dataframe
-    df_criterion = df['q_split'].map(lambda x: len(x) == (len(q)+1) and q == x[:len(q)])
+    df_criterion = df['q_split'].map(lambda x: q.issubset(x) and len(x) == (len(q)+1))
     qdf = df[df_criterion]
     # return searches in same session as the query, and candidate queries
     return df[df.AnonID.isin(qdf.AnonID.values)], qdf
@@ -42,7 +42,7 @@ def mod_time(CQ, frequencies, q, sessions, q_index):
     min_time = 0 # in seconds
     for i in q_index:
         try:
-            if sessions['Query'].loc[i+1] == CQ:
+            if sessions['q_split_join'].loc[i+1] == CQ:
                 mod_count += 1
             time_range = sessions['q_time'].loc[i+1] - sessions['q_time'].loc[i]
             if time_range < min_time or min_time == 0:
@@ -63,7 +63,7 @@ def score(CQ, q,frequencies, sessions, q_index):
 # ### single function to call
 # get top 5 query suggestions
 def get_top_5_simple(df, frequencies, q):
-    q = q.split(' ')
+    q = set(q.split(' '))
 
     sessions, cand = get_sessions(df, q)
     #cand = test_cand.head(500)
@@ -74,7 +74,7 @@ def get_top_5_simple(df, frequencies, q):
     cand['score'] = [score(row['Query'], q, frequencies, sessions, q_index) for index, row in cand.iterrows()]
 
     cand = cand.sort_values(by='score', ascending=False)
-    # we_need drop query suggestions that are duplicates
-    top_5 = cand.drop_duplicates(subset='Query')[:5]
+    # we_need drop query suggestions that are duplicates (just different arrangement of words)
+    top_5 = cand.drop_duplicates(subset='q_split_join')[:5]
 
     return top_5['Query'].values
